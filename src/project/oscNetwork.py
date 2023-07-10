@@ -21,7 +21,7 @@ from src.project.parser import Parser
 from src.Structs.Constants import SAVED_SCENE, COMPLEX_SCENE
 
 class OscNetwork():
-    """ OSC Message receiver and sender """
+    """ OSC Message receiver and sender for communication between the Magic Leap and the server"""
     time2 = str(datetime.datetime.now().strftime(("%H%M%S")))
 
     def __init__(self, sceneProcessor : sp.SceneProcessor):
