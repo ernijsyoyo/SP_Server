@@ -1,32 +1,15 @@
 from src.project.parser import Parser
-
-class TcpNetwork():
-    def __init__(self):
-        print("Opening a TCP socket")
-        self.sceneFile = "<MyScene />"
-        self.initSceneParser()
-
-    def initSceneParser(self):
-        parser = Parser(self.sceneFile) 
-        # TODO port the TCP code here
-
-
-
-
-
-
-
-
-# ---------------------------------------------------
-## TODO Port the code below into the class TCPNetwork
+from src.Structs.Constants import SAVED_SCENE
 import socket
-import threading
-import cv2
 import atexit
+import os
+import datetime
 import argparse
 
+savedscene = SAVED_SCENE
+
 class Server():
-    def __init__(self, ipAddress="192.168.1.214", port=8052):
+    def __init__(self, ipAddress="192.168.1.214", port=8050):
         """ Single threaded server application
 
         Args:
@@ -47,18 +30,25 @@ class Server():
         self.TCPServerSocket.bind(self.serverAddress)
         print("TCP server up and listening on endpoint {0}:{1}".format(self.localIP, self.localPort))
 
+        self.listen()
+
         # Callback function executed when the program finishes
         atexit.register(self.cleanup)
 
     def cleanup(self):
         print("Cleaning up resources..")
-        cv2.destroyAllWindows()
         self.TCPServerSocket.close()
 
     def listen(self):
         # Listen for incoming connections
         print("Listening for incoming traffic..")
         self.TCPServerSocket.listen(1)
+
+        #Create file and write stuff in it
+        path = "res"
+        time = str(datetime.datetime.now().strftime("%H%M%S"))
+        fileName = "savedFile_" + time + ".txt"
+        outputpath = os.path.join(os.getcwd(), path, fileName)
 
         while True:
             # Wait for a connection
@@ -73,42 +63,42 @@ class Server():
 
                 # Process the data
                 amount_received = amount_received + data
-                self.saveFile(None)
+                self.saveFile(data, outputpath)
 
                 if data:
                     print(f"Received {data}")
                 else:
+                    Parser(outputpath)
                     print(f"No more data")
-                    self.processImage(amount_received)
-                    self.decodeData(amount_received)
                     break
 
-                    # pass the output it to parser
-
-    def decodeData(self, data):
-        gray = cv2.cvtColor(data, cv2.COLOR_GRAY2BGR)
-        cv2.imshow('frame', gray)
 
 
-    def saveFile(self, data, path):
+    def saveFile(self, data, outputpath):
         """Decodes the binary data as XML and saves it to the path
 
         Args:
             data ([type]): [description]
             path ([type]): Path relative from the main entry point to a file in res directory
-        
-
         """
-        # For inspiration..
         # 1. Decode the data bytes to a string
+        dec = data.decode()
+
         # 2. Create a blank text file at the given path
         # 3. Dump the decoded data bytes to the file
+        fileexist : bool = os.path.exists(outputpath)
+        with open(outputpath, "a" if fileexist else "w",  newline='') as fh:
+            fh.write(dec)
+            fh.flush()
+            fh.close()
+
+
         return True
 
 def main():
   # Prep args
   parser = argparse.ArgumentParser(description='Process some integers.')
-  parser.add_argument('-l', action='store_true', help='Initialize the server on localhost and default port (8050)')
+  parser.add_argument('-l', action='store_true', help='Initialize the server on localhost and default port (8052)')
   parser.add_argument('-i', type=str, help='IP Address for the server (you cannot bind to an IP address that your PC doesnt have! Use if/ipconfig as help)')
   parser.add_argument('-p', type=int, help='TCP port')
   args = parser.parse_args()
@@ -120,7 +110,7 @@ def main():
 
   # Handle args
   if(args.l):
-    argIp = "127.0.0.1"
+    argIp = "192.168.1.214"
 
   if(argIp and argPort is not None):
       serv = Server(argIp, argPort)
